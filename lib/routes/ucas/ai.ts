@@ -1,0 +1,55 @@
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
+import got from '@/utils/got';
+import { parseDateStrict } from '@/utils/time';
+
+export const route: Route = {
+    path: '/ai',
+    categories: ['university'],
+    example: '/ucas/ai',
+    parameters: {},
+    features: {
+        requireConfig: false,
+        requirePuppeteer: false,
+        antiCrawler: true,
+        supportBT: false,
+        supportPodcast: false,
+        supportScihub: false,
+    },
+    radar: [
+        {
+            source: ['ai.ucas.ac.cn/index.php/zh-cn/tzgg', 'ai.ucas.ac.cn/'],
+        },
+    ],
+    name: '人工智能学院',
+    maintainers: ['shengmaosu'],
+    handler,
+    url: 'ai.ucas.ac.cn/index.php/zh-cn/tzgg',
+};
+
+async function handler() {
+    const baseUrl = 'https://ai.ucas.ac.cn';
+    const link = `${baseUrl}/index.php/zh-cn/tzgg`;
+    const response = await got(link);
+    const $ = load(response.data);
+    const list = $('.b-list li');
+
+    return {
+        title: '中国科学院大学人工智能学院',
+        link,
+        description: '中国科学院大学人工智能学院通知公告',
+        item:
+            list &&
+            list.toArray().map((item) => {
+                const $item = $(item);
+                const a = $item.find('a');
+                const pubDate = parseDateStrict($item.find('.m-date').text().trim(), 'YYYY-MM-DD', 8);
+                return {
+                    title: a.text(),
+                    link: `${baseUrl}${a.attr('href')}`,
+                    pubDate,
+                };
+            }),
+    };
+}
